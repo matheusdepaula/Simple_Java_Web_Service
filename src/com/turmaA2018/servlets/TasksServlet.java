@@ -51,13 +51,8 @@ public class TasksServlet extends HttpServlet {
 
 	protected void doGetById(HttpServletRequest request, HttpServletResponse response, String pathInfo) throws ServletException, IOException {
 		
-		String[] splits = pathInfo.split("/");
-		if (splits.length != 2) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-			return;
-		}
+		String taskId = getTaskIdByServerRequest(request);
 		
-		String taskId = splits[1];
 		Task task = findTaskById(taskId);
 		
 		if (task == null) {
@@ -69,6 +64,29 @@ public class TasksServlet extends HttpServlet {
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.getWriter().write(json);
 		}
+	}
+	
+	private String getTaskIdByServerRequest(HttpServletRequest request) {
+		
+		String pathInfo = request.getPathInfo();
+		
+		String[] splits = pathInfo.split("/");
+		
+		if (splits.length > 1) {
+			return splits[1];
+		}
+		
+		return null;
+	}
+	
+	private Boolean deleteTaskById(String taskId) {
+		Task task = findTaskById(taskId);
+		
+		if (task != null) {
+			taskList.remove(task);
+			return true;
+		}	
+		return false;
 	}
 	
 	private Task findTaskById(String taskId) {
@@ -110,14 +128,36 @@ public class TasksServlet extends HttpServlet {
 	 * @see HttpServlet#doPut(HttpServletRequest, HttpServletResponse)
 	 */
 	protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+		response.setContentType("application/json; charset=UTF-8");
+		
+		String taskId = getTaskIdByServerRequest(request);
+		Task actualTask = findTaskById(taskId);
+		Task taskToUpdate = new Gson().fromJson(request.getReader(), Task.class);
+		
+		if (actualTask != null) {
+			int indexToUpdate = taskList.indexOf(actualTask);
+			taskToUpdate.setId(actualTask.getId());
+			
+			taskList.set(indexToUpdate, taskToUpdate);
+			
+			response.setStatus(HttpServletResponse.SC_OK);
+		} else {
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		}
 	}
 
 	/**
 	 * @see HttpServlet#doDelete(HttpServletRequest, HttpServletResponse)
 	 */
 	protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+		response.setContentType("application/json; charset=UTF-8");
+		
+		String taskId = getTaskIdByServerRequest(request);
+		if (deleteTaskById(taskId)) {
+			response.setStatus(HttpServletResponse.SC_OK);
+		} else {
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		}	
 	}
 
 }
